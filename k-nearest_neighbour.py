@@ -197,16 +197,46 @@ testArticleSummary = fs.exctract_features(testArtice, 25)
 
 similarities = {}
 
-for articleSummary in articleSummary:
-    oneArticleSummary = articleSummary[articleSummary]['feature vector']
-    similarities[articleUrl] = len(set(testArticleSummary)).intersection(set(oneArticleSummary))
+# for articleSummary in articleSummary:
+#     oneArticleSummary = articleSummary[articleSummary]['feature vector']
+#     similarities[articleUrl] = len(set(testArticleSummary)).intersection(set(oneArticleSummary))
 
-lables = defaultdict(int)
-knn = nlargest(5, similarities, key=similarities.get)
+# lables = defaultdict(int)
+# knn = nlargest(5, similarities, key=similarities.get)
 
-for oneneighbour in knn:
-    lables[articleSummary[oneneighbour]['lable']] +=1
+# for oneneighbour in knn:
+#     lables[articleSummary[oneneighbour]['lable']] +=1
 
-nlargest(1, lables, key=lables.get)
+# nlargest(1, lables, key=lables.get)
 
+cummulativeRawFrequency = {'Tech':defaultdict(int),'Non Tech':defaultdict(int)}
+trainingData = {'Tech':newYorkTimesTechArticles, 'Non Tech':newYorkTimesNonTechArticles}
+for lable in trainingData:
+    for articleUrl in trainingData[lable]:
+        if len(trainingData[lable][articleUrl])>0:
+            fs =FrequencySummarizer()
+            rawFrequency = fs.exctractRawFrequencies(trainingData[lable][articleUrl])
+            for word in rawFrequency:
+                cummulativeRawFrequency[lable][word] += rawFrequency[word]
 
+techinese = 1.0
+nontechinese = 1.0
+
+for word in testArtice:
+    if word in cummulativeRawFrequency[tech]:
+        techinese *= 1e3*cummulativeRawFrequency['Tech'][word]/float(sum(cummulativeRawFrequency['Tech'].values()))
+    else:
+        nontechinese /= 1e3
+    if word in cummulativeRawFrequency[nontech]:
+        nontechinese *= 1e3*cummulativeRawFrequency['Non Tech'][word]/float(sum(cummulativeRawFrequency['Non Tech'].values()))
+    else:
+        techinese /= 1e3
+
+techinese *= float(sum(cummulativeRawFrequency['Tech'].values())) / (float(sum(cummulativeRawFrequency['Tech'].values()))) + (float(sum(cummulativeRawFrequency['Non Tech'].values())))
+nontechinese *= float(sum(cummulativeRawFrequency['Non Tech'].values())) / (float(sum(cummulativeRawFrequency['Non Tech'].values()))) + (float(sum(cummulativeRawFrequency['Tech'].values())))
+
+if techinese > nontechinese:
+    lable = 'Tech'
+else:
+    lable = 'Non Tech'
+print lable, techinese, nontechinese
